@@ -178,19 +178,34 @@ const SPRITES = ['rig_body', 'rig_armL', 'rig_armR', 'jump', 'crouch', 'front', 
 const TEXS = ['path_stone', 'ground_moss', 'rock_wall', 'wood_planks'];
 
 function loadImg(key, url) {
+  // 弱网环境（如公网 CDN 抖动）下单次失败就卡死启动，自动重试 3 次
   return new Promise((res, rej) => {
-    const im = new Image();
-    im.onload = () => { img[key] = im; res(); };
-    im.onerror = () => rej(new Error('加载失败: ' + url));
-    im.src = url;
+    const tryOnce = (left) => {
+      const im = new Image();
+      im.onload = () => { img[key] = im; res(); };
+      im.onerror = () => {
+        if (left > 0) setTimeout(() => tryOnce(left - 1), 800);
+        else rej(new Error('加载失败: ' + url));
+      };
+      im.src = url;
+    };
+    tryOnce(3);
   });
 }
 function loadTex(key, url, srgb = true) {
-  return new Promise((res, rej) => loader.load(url, t => {
-    if (srgb) t.colorSpace = THREE.SRGBColorSpace;
-    t.anisotropy = 4;
-    tex[key] = t; res();
-  }, undefined, () => rej(new Error('贴图加载失败: ' + url))));
+  return new Promise((res, rej) => {
+    const tryOnce = (left) => {
+      loader.load(url, t => {
+        if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+        t.anisotropy = 4;
+        tex[key] = t; res();
+      }, undefined, () => {
+        if (left > 0) setTimeout(() => tryOnce(left - 1), 800);
+        else rej(new Error('贴图加载失败: ' + url));
+      });
+    };
+    tryOnce(3);
+  });
 }
 
 const bootPromise = Promise.all([

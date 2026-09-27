@@ -1,0 +1,1728 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>神庙逃亡 · 小一快跑</title>
+<style>
+  :root{ --gold:#e8c15a; --gold-dim:#a9872f; }
+  *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ width:100%; height:100%; overflow:hidden; background:#0b130d; touch-action:none;
+    font-family:"Microsoft YaHei","PingFang SC",sans-serif; user-select:none; -webkit-user-select:none; }
+  #c3d{ position:fixed; inset:0; display:block; }
+  .hidden{ display:none !important; }
+
+  /* ---------- HUD ---------- */
+  #hud{ position:fixed; inset:0; pointer-events:none; z-index:5; }
+  #hud .top{ position:absolute; top:calc(8px + env(safe-area-inset-top)); left:0; right:0;
+    display:flex; align-items:flex-start; justify-content:space-between; padding:0 12px; }
+  .score-box{ text-align:center; color:#fff; text-shadow:0 2px 6px rgba(0,0,0,.8); }
+  #score{ font-size:clamp(26px,5vw,40px); font-weight:800; color:var(--gold);
+    text-shadow:0 0 12px rgba(232,193,90,.45), 0 2px 4px #000; letter-spacing:1px; }
+  #dist{ font-size:clamp(12px,2.4vw,16px); color:#cfe3c0; }
+  .hud-right{ display:flex; gap:8px; pointer-events:auto; }
+  .icon-btn{ width:42px; height:42px; border-radius:10px; border:1px solid rgba(232,193,90,.5);
+    background:rgba(20,16,10,.55); color:var(--gold); font-size:20px; line-height:1;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; backdrop-filter:blur(2px); }
+  .icon-btn:active{ transform:scale(.92); }
+  #coin-box{ display:flex; align-items:center; gap:6px; margin-top:6px; justify-content:center; }
+  #coin-box img{ width:24px; height:24px; }
+  #coins{ font-size:clamp(16px,3vw,22px); font-weight:700; color:#ffd968; text-shadow:0 2px 4px #000; }
+  #best-hud{ font-size:12px; color:#9fb49a; margin-top:2px; }
+  #tip{ position:absolute; left:0; right:0; bottom:calc(20% + env(safe-area-inset-bottom)); text-align:center;
+    color:#ffe9a8; font-weight:800; font-size:clamp(18px,4.5vw,30px); letter-spacing:2px;
+    text-shadow:0 0 4px #000, 0 2px 6px #000, 0 0 20px rgba(0,0,0,.9);
+    opacity:0; transition:opacity .15s; }
+  #vignette{ position:fixed; inset:0; pointer-events:none; z-index:6; opacity:0;
+    background:radial-gradient(ellipse at center, transparent 42%, rgba(160,20,10,.55) 100%); }
+  #fade{ position:fixed; inset:0; pointer-events:none; z-index:7; background:#000; opacity:0; transition:opacity .5s; }
+
+  /* ---------- 菜单 / 结算 ---------- */
+  .panel{ position:fixed; inset:0; z-index:10; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:14px; text-align:center; padding:24px;
+    background:radial-gradient(ellipse at 50% 30%, rgba(38,52,34,.92), rgba(6,10,7,.97) 75%); }
+  .panel::before{ content:""; position:absolute; inset:12px; border:2px solid rgba(232,193,90,.35);
+    border-radius:14px; pointer-events:none; }
+  h1{ color:var(--gold); font-size:clamp(30px,7vw,54px); letter-spacing:6px; font-weight:900;
+    text-shadow:0 3px 0 #5c4514, 0 6px 18px rgba(0,0,0,.8); font-family:"STZhongsong","SimSun",serif; }
+  .sub{ color:#b9cfae; font-size:clamp(13px,2.6vw,16px); line-height:1.7; max-width:520px; }
+  .sub b{ color:#ffd968; }
+  #menu-girl{ height:clamp(150px,28vh,220px); filter:drop-shadow(0 12px 18px rgba(0,0,0,.6)); }
+  .btn{ pointer-events:auto; cursor:pointer; border:2px solid var(--gold-dim); border-radius:12px;
+    background:linear-gradient(180deg,#3a3122 0%,#221b10 100%); color:var(--gold);
+    font-size:clamp(17px,3.4vw,22px); font-weight:800; letter-spacing:3px; padding:12px 46px;
+    box-shadow:0 4px 14px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,230,160,.25); }
+  .btn:active{ transform:translateY(2px) scale(.98); }
+  .btn.main{ background:linear-gradient(180deg,#8a6a1e 0%,#5c4514 100%); color:#fff3d0;
+    border-color:#e8c15a; text-shadow:0 1px 3px #000; }
+  .row{ display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+  .keys{ color:#8ba383; font-size:clamp(11px,2.2vw,13px); line-height:1.9; }
+  .keys kbd{ background:#241d12; border:1px solid #55482a; border-radius:5px; padding:1px 7px; color:#e8d9a8; font-family:inherit; }
+  #over-title{ color:#ff6a4d; text-shadow:0 0 16px rgba(255,80,40,.5), 0 3px 0 #4d150a; }
+  #over-face{ height:clamp(110px,22vh,170px); border-radius:16px; border:2px solid rgba(232,193,90,.4);
+    box-shadow:0 10px 30px rgba(0,0,0,.7); }
+  #over-stats{ color:#e9e2c8; font-size:clamp(15px,3vw,19px); line-height:1.9; }
+  #over-stats b{ color:#ffd968; font-size:1.3em; }
+  #new-record{ color:#7dff9a; font-weight:900; font-size:clamp(15px,3vw,20px); letter-spacing:2px;
+    animation:pulse 1s infinite; }
+  @keyframes pulse{ 50%{ opacity:.45; } }
+  #loading{ position:fixed; inset:0; z-index:20; display:flex; align-items:center; justify-content:center;
+    background:#0b130d; color:var(--gold); font-size:18px; letter-spacing:4px; }
+  .err{ color:#ff9c8a; font-size:14px; max-width:420px; line-height:1.8; }
+</style>
+</head>
+<body>
+<canvas id="c3d"></canvas>
+
+<div id="loading">进入神庙…</div>
+
+<div id="hud" class="hidden">
+  <div class="top">
+    <div></div>
+    <div class="score-box">
+      <div id="score">0</div>
+      <div id="dist">0 m</div>
+      <div id="coin-box"><img src="assets/textures/coin_face.png" alt=""><span id="coins">0</span></div>
+      <div id="best-hud">最佳 0</div>
+    </div>
+    <div class="hud-right">
+      <button class="icon-btn" id="btn-mute" title="声音">🔊</button>
+      <button class="icon-btn" id="btn-pause" title="暂停">⏸</button>
+    </div>
+  </div>
+  <div id="tip"></div>
+</div>
+
+<div id="vignette"></div>
+<div id="fade"></div>
+
+<div id="menu" class="panel hidden">
+  <h1>神庙逃亡</h1>
+  <div class="sub">小一从古庙里偷走了<b>「旺旺神像」</b>，<br>守护猴倾巢而出——快跑，别回头！</div>
+  <img id="menu-girl" src="assets/front.png" alt="小一">
+  <button class="btn main" id="btn-start">开 始 逃 亡</button>
+  <div class="keys">
+    <kbd>←</kbd><kbd>→</kbd> 换道 / 转弯　<kbd>↑</kbd>/<kbd>空格</kbd> 跳跃　<kbd>↓</kbd> 铲跑<br>
+    手机：左右滑动换道转弯 · 上滑跳 · 下滑铲 · 点按跳
+  </div>
+  <div class="sub" id="menu-best" style="font-size:13px;color:#8ba383"></div>
+</div>
+
+<div id="over" class="panel hidden">
+  <h1 id="over-title">被抓住了！</h1>
+  <img id="over-face" src="assets/expr_wow.png" alt="">
+  <div id="over-stats"></div>
+  <div id="new-record" class="hidden">★ 新纪录 ★</div>
+  <button class="btn main" id="btn-retry">再 跑 一 次</button>
+  <div class="keys">按 <kbd>R</kbd> 或 <kbd>空格</kbd> 重新开始</div>
+</div>
+
+<div id="pause" class="panel hidden">
+  <h1 style="letter-spacing:10px">暂 停</h1>
+  <button class="btn main" id="btn-resume">继 续 跑</button>
+  <button class="btn" id="btn-quit">回 到 神 庙</button>
+</div>
+
+<script type="module">
+import * as THREE from './lib/three.module.js';
+
+/* ============================================================
+   神庙逃亡 · 小一快跑 —— 真 3D 无尽跑酷
+   路径系统：路径空间坐标 (d:沿路里程, x:横向车道偏移, y:高度)
+   由"直路段 + 转弯路口"组成；转弯时把玩家投影到新路段坐标系，
+   相机沿世界坐标平滑摆动，形成神庙逃亡式的过弯运镜。
+   ============================================================ */
+
+const $ = id => document.getElementById(id);
+const LANE_W = 1.15;                 // 车道宽
+const PATH_W = LANE_W * 3;           // 路面宽
+const JW = PATH_W + 0.9;             // 转弯路口平台边长
+const GRAV = 24, JUMP_V = 8.6;
+const UP = new THREE.Vector3(0, 1, 0);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const damp = (a, b, k, dt) => lerp(a, b, 1 - Math.exp(-k * dt));
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = arr => arr[Math.random() * arr.length | 0];
+
+/* ---------------- 渲染器 / 场景 ---------------- */
+const renderer = new THREE.WebGLRenderer({ canvas: $('c3d'), antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+const scene = new THREE.Scene();
+const FOG_COLOR = new THREE.Color(0x22371f);
+scene.background = FOG_COLOR.clone();
+scene.fog = new THREE.FogExp2(FOG_COLOR, 0.021);
+const camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.1, 260);
+camera.position.set(0, 3, 6);
+
+scene.add(new THREE.HemisphereLight(0xcfe0b4, 0x2a2010, 1.15));
+const sun = new THREE.DirectionalLight(0xffe0b0, 1.2);
+sun.position.set(6, 12, 4);
+scene.add(sun);
+const sun2 = new THREE.DirectionalLight(0x88a8ff, 0.3);
+sun2.position.set(-6, 8, -6);
+scene.add(sun2);
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+/* ---------------- 素材加载 ---------------- */
+const loader = new THREE.TextureLoader();
+const tex = {};
+const img = {};
+const SPRITES = ['rig_body', 'rig_armL', 'rig_armR', 'jump', 'crouch', 'front', 'face', 'expr_wow', 'expr_angry'];
+const TEXS = ['path_stone', 'ground_moss', 'rock_wall', 'wood_planks'];
+
+function loadImg(key, url) {
+  return new Promise((res, rej) => {
+    const im = new Image();
+    im.onload = () => { img[key] = im; res(); };
+    im.onerror = () => rej(new Error('加载失败: ' + url));
+    im.src = url;
+  });
+}
+function loadTex(key, url, srgb = true) {
+  return new Promise((res, rej) => loader.load(url, t => {
+    if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 4;
+    tex[key] = t; res();
+  }, undefined, () => rej(new Error('贴图加载失败: ' + url))));
+}
+
+const bootPromise = Promise.all([
+  ...SPRITES.map(k => loadImg(k, `assets/${k}.png`)),
+  ...TEXS.map(k => loadTex(k, `assets/textures/${k}.jpg`)),
+  loadTex('coin', 'assets/textures/coin_face.png'),
+]).then(() => {
+  for (const k of SPRITES) {
+    const t = new THREE.Texture(img[k]);
+    t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+    t.needsUpdate = true; tex[k] = t;
+  }
+});
+
+/* ---------------- 程序化小贴图（火苗/箭头/守护猴/光晕/影子） ---------------- */
+function canvasTex(size, draw) {
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  draw(c.getContext('2d'), size);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+const texFlame = canvasTex(128, (g, s) => {
+  const grd = g.createRadialGradient(s / 2, s * 0.62, 4, s / 2, s * 0.55, s * 0.55);
+  grd.addColorStop(0, 'rgba(255,255,210,1)');
+  grd.addColorStop(0.25, 'rgba(255,200,60,.95)');
+  grd.addColorStop(0.6, 'rgba(255,110,20,.55)');
+  grd.addColorStop(1, 'rgba(120,20,0,0)');
+  g.fillStyle = grd; g.fillRect(0, 0, s, s);
+  g.globalCompositeOperation = 'destination-in';
+  g.beginPath();
+  g.moveTo(s / 2, s * 0.04);
+  g.quadraticCurveTo(s * 0.88, s * 0.5, s / 2, s * 0.98);
+  g.quadraticCurveTo(s * 0.12, s * 0.5, s / 2, s * 0.04);
+  g.fill();
+});
+function arrowTex(left) {
+  return canvasTex(128, (g, s) => {
+    g.strokeStyle = 'rgba(0,0,0,.45)'; g.lineWidth = 16;
+    g.fillStyle = '#ffd968'; g.lineJoin = 'round';
+    const p = new Path2D();
+    if (left) {
+      p.moveTo(26, 82); p.lineTo(62, 28); p.lineTo(62, 54); p.lineTo(106, 54);
+      p.lineTo(106, 104); p.lineTo(64, 104); p.lineTo(64, 90); p.closePath();
+    } else {
+      p.moveTo(102, 82); p.lineTo(66, 28); p.lineTo(66, 54); p.lineTo(22, 54);
+      p.lineTo(22, 104); p.lineTo(64, 104); p.lineTo(64, 90); p.closePath();
+    }
+    g.stroke(p); g.fill(p);
+  });
+}
+const texArrowL = arrowTex(true), texArrowR = arrowTex(false);
+const texGlow = canvasTex(128, (g, s) => {
+  const grd = g.createRadialGradient(s / 2, s / 2, 2, s / 2, s / 2, s / 2);
+  grd.addColorStop(0, 'rgba(255,220,120,.9)');
+  grd.addColorStop(0.4, 'rgba(255,180,60,.35)');
+  grd.addColorStop(1, 'rgba(255,150,30,0)');
+  g.fillStyle = grd; g.fillRect(0, 0, s, s);
+});
+const texShadow = canvasTex(128, (g, s) => {
+  const grd = g.createRadialGradient(s / 2, s / 2, 4, s / 2, s / 2, s / 2);
+  grd.addColorStop(0, 'rgba(0,0,0,.5)');
+  grd.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = grd; g.fillRect(0, 0, s, s);
+});
+const texDust = canvasTex(64, (g, s) => {
+  const grd = g.createRadialGradient(s / 2, s / 2, 2, s / 2, s / 2, s / 2);
+  grd.addColorStop(0, 'rgba(190,170,130,.9)');
+  grd.addColorStop(0.6, 'rgba(160,140,100,.45)');
+  grd.addColorStop(1, 'rgba(140,120,80,0)');
+  g.fillStyle = grd; g.fillRect(0, 0, s, s);
+});
+const texMonkey = canvasTex(256, (g, s) => {   // 守护猴：黑影 + 发光眼
+  const u = s / 256;
+  g.fillStyle = '#170f0c';
+  g.beginPath(); g.ellipse(128 * u, 190 * u, 74 * u, 62 * u, 0, 0, Math.PI * 2); g.fill();
+  g.beginPath(); g.arc(128 * u, 96 * u, 56 * u, 0, Math.PI * 2); g.fill();
+  g.beginPath(); g.ellipse(52 * u, 150 * u, 22 * u, 44 * u, 0.5, 0, Math.PI * 2); g.fill();
+  g.beginPath(); g.ellipse(206 * u, 150 * u, 22 * u, 44 * u, -0.5, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#5c4130';
+  g.beginPath(); g.ellipse(128 * u, 108 * u, 36 * u, 32 * u, 0, 0, Math.PI * 2); g.fill();
+  g.beginPath(); g.ellipse(104 * u, 74 * u, 14 * u, 12 * u, 0, 0, Math.PI * 2); g.fill();
+  g.beginPath(); g.ellipse(152 * u, 74 * u, 14 * u, 12 * u, 0, 0, Math.PI * 2); g.fill();
+  g.shadowColor = '#ffb020'; g.shadowBlur = 14 * u;
+  g.fillStyle = '#ffc840';
+  g.beginPath(); g.ellipse(114 * u, 104 * u, 8 * u, 10 * u, 0, 0, Math.PI * 2); g.fill();
+  g.beginPath(); g.ellipse(142 * u, 104 * u, 8 * u, 10 * u, 0, 0, Math.PI * 2); g.fill();
+  g.shadowBlur = 0; g.fillStyle = '#1a0d05';
+  g.beginPath(); g.ellipse(114 * u, 106 * u, 2.6 * u, 6 * u, 0, 0, Math.PI * 2); g.fill();
+  g.beginPath(); g.ellipse(142 * u, 106 * u, 2.6 * u, 6 * u, 0, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#2a1208';
+  g.beginPath(); g.ellipse(128 * u, 128 * u, 16 * u, 9 * u, 0, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#e8d9b0';
+  g.fillRect(118 * u, 124 * u, 5 * u, 6 * u); g.fillRect(133 * u, 124 * u, 5 * u, 6 * u);
+});
+
+const texVine = canvasTex(256, (g, s) => {   // 垂藤：顶部横枝 + 摇摆的藤条和叶子
+  const u = s / 256;
+  g.fillStyle = '#4a3620';
+  g.fillRect(0, 0, s, 24 * u);
+  g.fillStyle = '#5c4514';
+  for (let i = 0; i < 5; i++) g.fillRect(i * 52 * u + 8 * u, 5 * u, 32 * u, 7 * u);
+  g.lineCap = 'round';
+  [26, 66, 106, 148, 188, 224].forEach((x, i) => {
+    const len = s * (0.5 + ((i * 37) % 45) / 100);
+    const sway = (i % 2 ? 12 : -12) * u;
+    g.strokeStyle = '#2c5c1c'; g.lineWidth = 7 * u;
+    g.beginPath();
+    g.moveTo(x * u, 18 * u);
+    g.quadraticCurveTo(x * u + sway, 18 * u + (len - 18 * u) * 0.55, x * u + sway * 1.4, len);
+    g.stroke();
+    g.fillStyle = '#2f6b20';
+    for (let k = 1; k <= 4; k++) {
+      const t = k / 4;
+      const lx = x * u + sway * 1.4 * t * t;
+      const ly = 18 * u + (len - 18 * u) * t;
+      g.beginPath();
+      g.ellipse(lx + (i % 2 ? 9 : -9) * u, ly, 9 * u, 4.5 * u, (i % 2 ? 0.8 : -0.8), 0, Math.PI * 2);
+      g.fill();
+    }
+  });
+});
+texVine.wrapS = THREE.RepeatWrapping;
+texVine.repeat.set(2, 1);
+const texWater = canvasTex(256, (g, s) => {  // 水面：蓝底 + 顺流白色泡沫纹 + 亮斑
+  const u = s / 256;
+  const grd = g.createLinearGradient(0, 0, s, 0);
+  grd.addColorStop(0, '#1d5e8f'); grd.addColorStop(0.5, '#2e86c4'); grd.addColorStop(1, '#1d5e8f');
+  g.fillStyle = grd; g.fillRect(0, 0, s, s);
+  for (let i = 0; i < 16; i++) {
+    g.strokeStyle = `rgba(255,255,255,${0.08 + Math.random() * 0.18})`;
+    g.lineWidth = (1 + Math.random() * 2.4) * u;
+    const x = Math.random() * s;
+    g.beginPath();
+    g.moveTo(x, -8);
+    g.bezierCurveTo(x + (Math.random() * 30 - 15) * u, s * 0.33,
+                    x + (Math.random() * 30 - 15) * u, s * 0.66, x + (Math.random() * 20 - 10) * u, s + 8);
+    g.stroke();
+  }
+  for (let i = 0; i < 26; i++) {
+    g.fillStyle = `rgba(255,255,255,${0.15 + Math.random() * 0.3})`;
+    g.beginPath();
+    g.arc(Math.random() * s, Math.random() * s, (0.6 + Math.random() * 1.4) * u, 0, Math.PI * 2);
+    g.fill();
+  }
+});
+
+/* ---------------- 音效（WebAudio 合成，无外部音频文件） ---------------- */
+const AudioSys = {
+  ctx: null, muted: localStorage.getItem('xr_mute') === '1', drumTimer: 0, step: 0, tempo: 132,
+  ensure() {
+    if (!this.ctx) {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      this.master = this.ctx.createGain();
+      this.master.gain.value = this.muted ? 0 : 0.5;
+      this.master.connect(this.ctx.destination);
+    }
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+  },
+  setMuted(m) {
+    this.muted = m; localStorage.setItem('xr_mute', m ? '1' : '0');
+    if (this.master) this.master.gain.value = m ? 0 : 0.5;
+  },
+  tone(f0, f1, dur, type = 'sine', vol = 0.3, delay = 0) {
+    if (!this.ctx || this.muted) return;
+    const t = this.ctx.currentTime + delay;
+    const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+    o.type = type; o.frequency.setValueAtTime(f0, t);
+    o.frequency.exponentialRampToValueAtTime(Math.max(f1, 1), t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g); g.connect(this.master); o.start(t); o.stop(t + dur + 0.05);
+  },
+  noise(dur, freq, vol = 0.25, delay = 0) {
+    if (!this.ctx || this.muted) return;
+    const t = this.ctx.currentTime + delay;
+    const n = this.ctx.sampleRate * dur | 0;
+    const buf = this.ctx.createBuffer(1, n, this.ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    const src = this.ctx.createBufferSource(); src.buffer = buf;
+    const f = this.ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = 0.8;
+    const g = this.ctx.createGain(); g.gain.value = vol;
+    src.connect(f); f.connect(g); g.connect(this.master); src.start(t);
+  },
+  coin() { this.tone(1180, 1180, 0.07, 'square', 0.16); this.tone(1760, 1760, 0.16, 'square', 0.14, 0.07); },
+  jump() { this.noise(0.22, 900, 0.2); this.tone(300, 640, 0.18, 'sine', 0.16); },
+  slide() { this.noise(0.3, 500, 0.22); },
+  turn() { this.noise(0.2, 700, 0.22); this.tone(220, 440, 0.14, 'sine', 0.12); },
+  stumble() { this.tone(180, 70, 0.28, 'sawtooth', 0.4); this.noise(0.2, 300, 0.3); },
+  roar() { this.tone(160, 50, 0.7, 'sawtooth', 0.5); this.noise(0.5, 200, 0.4); this.tone(90, 40, 0.8, 'square', 0.3, 0.1); },
+  fall() { this.tone(900, 120, 1.1, 'sine', 0.3); },
+  water(dt) {
+    if (!this.ctx || this.muted) return;
+    this._wt = (this._wt || 0) - dt;
+    if (this._wt <= 0) {
+      this._wt = 0.085;
+      this.noise(0.1, 1500, 0.04);
+      if (Math.random() < 0.15) this.tone(rand(900, 1500), 500, 0.12, 'sine', 0.05);
+    }
+  },
+  drum(dt, speed) {
+    if (!this.ctx || this.muted) return;
+    this.tempo = 120 + speed * 4;
+    this.drumTimer -= dt;
+    if (this.drumTimer <= 0) {
+      this.drumTimer = 60 / this.tempo / 2;
+      const s = this.step++ % 8;
+      if (s === 0 || s === 3 || s === 6) this.tone(150, 45, 0.16, 'sine', 0.34);
+      if (s === 2 || s === 7) this.tone(330, 180, 0.09, 'triangle', 0.2);
+      this.noise(0.05, 5200, s % 2 ? 0.05 : 0.09);
+    }
+  }
+};
+
+/* ---------------- 共享几何 / 材质 ---------------- */
+const GEO = {
+  box: new THREE.BoxGeometry(1, 1, 1),
+  plane: new THREE.PlaneGeometry(1, 1),
+  coin: new THREE.PlaneGeometry(0.72, 0.72),
+  cyl: new THREE.CylinderGeometry(1, 1, 1, 8),
+  cone: new THREE.ConeGeometry(1, 1, 7),
+};
+let MAT;   // 素材加载完成后由 initMAT() 创建（贴图是异步的）
+function initMAT() {
+  MAT = {
+    stone: new THREE.MeshLambertMaterial({ map: tex.path_stone }),
+    rock: new THREE.MeshLambertMaterial({ map: tex.rock_wall, color: 0xa8a294 }),
+    wood: new THREE.MeshLambertMaterial({ map: tex.wood_planks }),
+    moss: new THREE.MeshLambertMaterial({ map: tex.ground_moss }),
+    trunk: new THREE.MeshLambertMaterial({ color: 0x4a3620 }),
+    leafA: new THREE.MeshLambertMaterial({ color: 0x245219 }),
+    leafB: new THREE.MeshLambertMaterial({ color: 0x2f6620 }),
+    leafC: new THREE.MeshLambertMaterial({ color: 0x1b3d13 }),
+    vine: new THREE.MeshLambertMaterial({ color: 0x2c4d1c }),
+    pillar: new THREE.MeshLambertMaterial({ color: 0x8a8072, map: tex.rock_wall }),
+    coin: new THREE.MeshBasicMaterial({ map: tex.coin, transparent: true, side: THREE.DoubleSide, depthWrite: false, alphaTest: 0.1 }),
+    glow: new THREE.SpriteMaterial({ map: texGlow, color: 0xc8860e, transparent: true, opacity: 0.38, blending: THREE.AdditiveBlending, depthWrite: false }),
+    flame: new THREE.SpriteMaterial({ map: texFlame, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }),
+    shadow: new THREE.MeshBasicMaterial({ map: texShadow, transparent: true, depthWrite: false }),
+    arrowL: new THREE.MeshBasicMaterial({ map: texArrowL, transparent: true, depthWrite: false }),
+    arrowR: new THREE.MeshBasicMaterial({ map: texArrowR, transparent: true, depthWrite: false }),
+    vineCurtain: new THREE.MeshLambertMaterial({ map: texVine, transparent: true, alphaTest: 0.1, side: THREE.DoubleSide, depthWrite: false }),
+    water: new THREE.MeshLambertMaterial({ map: texWater }),
+  };
+}
+function segWorld(seg, d, x, y, out) {
+  out.copy(seg.start)
+     .addScaledVector(seg.dir, d - seg.startD)
+     .addScaledVector(seg.right, x);
+  out.y += y;
+  return out;
+}
+function rotY(dir, sign) {  // sign=+1 左转, -1 右转
+  return new THREE.Vector3(
+    dir.x * Math.cos(sign * Math.PI / 2) + dir.z * Math.sin(sign * Math.PI / 2),
+    0,
+    -dir.x * Math.sin(sign * Math.PI / 2) + dir.z * Math.cos(sign * Math.PI / 2)
+  ).round();
+}
+
+/* ============================================================
+   路径系统
+   ============================================================ */
+const path = {
+  segments: [], nextId: 0,
+  reset() { for (const s of this.segments) this.remove(s); this.segments = []; this.nextId = 0; },
+  remove(s) {
+    scene.remove(s.group);
+    if (s.dyn) for (const o of s.dyn) {
+      if (o.isTexture) o.dispose(); else if (o.dispose) o.dispose();
+    }
+  },
+  get last() { return this.segments[this.segments.length - 1]; },
+  segAt(d) {
+    const segs = this.segments;
+    for (let i = segs.length - 1; i >= 0; i--) {
+      if (d >= segs[i].startD - 0.01) return segs[i];
+    }
+    return segs[0];
+  }
+};
+
+const DIFF = {
+  gapU: d => clamp(10.5 + d * 0.004, 10.5, 15),
+  speed: d => Math.min(13.5, 6.2 + d * 0.017),
+};
+const DEBUG = { water: false, vine: false };   // 调试开关：__temple.debug.water / .vine
+
+function newSegCommon(type, startD, start, dir) {
+  return {
+    id: path.nextId++, type, startD,
+    start: start.clone(), dir: dir.clone(),
+    right: new THREE.Vector3().crossVectors(dir, UP).round(),
+    obstacles: [], coins: [], gaps: [], flames: null, arrows: null, dyn: null,
+    group: new THREE.Group(),
+  };
+}
+
+function makeFirstSegment() {
+  const seg = newSegCommon('straight', 0, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1));
+  seg.len = 55;   // 教学区：只有金币
+  buildStraight(seg, { intro: true });
+  scene.add(seg.group);
+  path.segments.push(seg);
+}
+
+function makeNextSegment() {
+  const prev = path.last;
+  if (!prev) return;
+  if (prev.type === 'junction' && !prev.resolved) return;   // 等待转弯提交
+  const start = prev.start.clone().addScaledVector(prev.dir, prev.type === 'junction' ? JW : prev.len);
+  const startD = prev.startD + (prev.type === 'junction' ? JW : prev.len);
+  const water = startD > 150 && prev.type !== 'water' && (DEBUG.water || Math.random() < 0.15);
+  const junction = !water && startD > 90 && Math.random() < 0.62;
+  if (water) {
+    const seg = newSegCommon('water', startD, start, prev.dir);
+    seg.len = rand(24, 34);
+    buildWater(seg);
+    scene.add(seg.group);
+    path.segments.push(seg);
+  } else if (junction) {
+    const j = newSegCommon('junction', startD, start, prev.dir);
+    j.len = JW;
+    j.turn = Math.random() < 0.42 ? (Math.random() < 0.5 ? 'L' : 'R') : 'T';
+    buildJunction(j);
+    scene.add(j.group);
+    path.segments.push(j);
+  } else {
+    const seg = newSegCommon('straight', startD, start, prev.dir);
+    seg.len = rand(26, 38);
+    buildStraight(seg, {});
+    scene.add(seg.group);
+    path.segments.push(seg);
+  }
+}
+
+function ensureAhead(d) {
+  let guard = 0;
+  while (guard++ < 12) {
+    const last = path.last;
+    if (!last) { makeFirstSegment(); continue; }
+    if (last.type === 'junction' && !last.resolved) break;
+    const endD = last.startD + (last.type === 'junction' ? JW : last.len);
+    if (endD > d + 95) break;
+    makeNextSegment();
+  }
+}
+
+function cleanupBehind(d) {
+  while (path.segments.length > 3) {
+    const s = path.segments[0];
+    const endD = s.startD + (s.type === 'junction' ? JW : s.len);
+    if (endD < d - 40) { path.remove(s); path.segments.shift(); } else break;
+  }
+}
+
+/* ---------------- 障碍 / 金币 ---------------- */
+function buildStraight(seg, { intro = false } = {}) {
+  const g = seg.group;
+  const len = seg.len;
+  const stoneTex = tex.path_stone.clone();
+  stoneTex.wrapS = stoneTex.wrapT = THREE.RepeatWrapping;
+  stoneTex.repeat.set(1, Math.max(1, Math.round(len / 3.2)));
+  stoneTex.needsUpdate = true;
+  const floorMat = new THREE.MeshLambertMaterial({ map: stoneTex });
+  seg.dyn = [stoneTex, floorMat];
+
+  /* 1. 布局数据（先于几何，地板要给缺口留洞） */
+  if (!intro) {
+    let u = 9;
+    while (u < len - 8) {
+      const diff = seg.startD + u;          // 用障碍所在位置的绝对里程决定难度
+      if (DEBUG.vine) { addVines(seg, u); u += DIFF.gapU(diff) * 1.2; continue; }
+      const roll = Math.random();
+      if (diff < 70) {
+        if (roll < 0.5) addRoot(seg, u, Math.random() < 0.5 ? 'all' : 'two');
+        else addCoinLine(seg, u, pick([-1, 0, 1]));
+        u += DIFF.gapU(diff) * 1.25;
+      } else if (diff < 150) {
+        if (roll < 0.22) addRoot(seg, u, 'all');
+        else if (roll < 0.40) addWall(seg, u, 2);
+        else if (roll < 0.52) addCoinArc(seg, u);
+        else if (roll < 0.70) addCoinLine(seg, u, pick([-1, 0, 1]));
+        else if (roll < 0.82) addVines(seg, u);
+        else addRoot(seg, u, 'two');
+        u += DIFF.gapU(diff) * rand(0.9, 1.3);
+      } else {
+        if (roll < 0.18) addRoot(seg, u, 'all');
+        else if (roll < 0.32) addWall(seg, u, 2);
+        else if (roll < 0.44) addBeam(seg, u);
+        else if (roll < 0.56) addGap(seg, u);
+        else if (roll < 0.66) { const wl = addWall(seg, u, 1); addCoinLine(seg, u, wl[0] === 0 ? pick([-1, 1]) : 0, true); u += 2.2; }
+        else if (roll < 0.78) addCoinLine(seg, u, pick([-1, 0, 1]));
+        else if (roll < 0.88) addVines(seg, u);
+        else addCoinArc(seg, u);
+        u += DIFF.gapU(diff) * rand(0.85, 1.25);
+      }
+    }
+    if (Math.random() < 0.8) addCoinLine(seg, len - 4, pick([-1, 0, 1]));
+  } else {
+    addCoinLine(seg, 14, 0); addCoinLine(seg, 24, -1); addCoinLine(seg, 34, 1); addCoinLine(seg, 44, 0);
+  }
+
+  /* 2. 地板（跳过缺口区间） */
+  const ranges = [];
+  let a = 0;
+  const holes = seg.gaps.slice().sort((p, q) => p.u0 - q.u0);
+  for (const h of holes) { if (h.u0 > a) ranges.push([a, h.u0]); a = h.u1; }
+  if (a < len) ranges.push([a, len]);
+  const rot = Math.atan2(seg.dir.x, seg.dir.z) + Math.PI;
+  for (const [u0, u1] of ranges) {
+    const L = u1 - u0;
+    const m = new THREE.Mesh(GEO.box, floorMat);
+    m.scale.set(PATH_W + 0.7, 0.7, L);
+    segWorld(seg, seg.startD + (u0 + u1) / 2, 0, -0.35, m.position);
+    m.rotation.y = rot;
+    g.add(m);
+  }
+  for (const side of [-1, 1]) {
+    const curb = new THREE.Mesh(GEO.box, MAT.rock);
+    curb.scale.set(0.5, 0.42, len);
+    segWorld(seg, seg.startD + len / 2, side * (PATH_W / 2 + 0.28), -0.1, curb.position);
+    curb.rotation.y = rot;
+    g.add(curb);
+  }
+  for (const h of seg.gaps) {
+    for (const e of [h.u0 + 0.12, h.u1 - 0.12]) {
+      const w = new THREE.Mesh(GEO.box, MAT.wood);
+      w.scale.set(PATH_W + 0.4, 0.14, 0.3);
+      segWorld(seg, seg.startD + e, 0, 0.02, w.position);
+      w.rotation.y = rot;
+      g.add(w);
+    }
+  }
+  buildDecor(seg, rot);
+}
+
+function addRoot(seg, u, kind) {
+  const lanes = kind === 'all' ? [-1, 0, 1] : [-1, 0];
+  seg.obstacles.push({ type: 'root', u, lanes, hit: false });
+  const rot = Math.atan2(seg.dir.x, seg.dir.z) + Math.PI;
+  for (const ln of lanes) {
+    const m = new THREE.Mesh(GEO.box, Math.random() < 0.5 ? MAT.wood : MAT.rock);
+    m.scale.set(LANE_W * 0.94, 0.52, 0.55);
+    segWorld(seg, seg.startD + u, ln * LANE_W, 0.26, m.position);
+    m.rotation.y = rot + rand(-0.06, 0.06);
+    seg.group.add(m);
+    if (Math.random() < 0.5) {
+      const v = new THREE.Mesh(GEO.box, MAT.vine);
+      v.scale.set(LANE_W * 0.8, 0.1, 0.6);
+      segWorld(seg, seg.startD + u, ln * LANE_W, 0.55, v.position);
+      v.rotation.y = m.rotation.y;
+      seg.group.add(v);
+    }
+  }
+}
+function addWall(seg, u, nLanes) {
+  const combos = nLanes === 2 ? [[-1, 0], [0, 1]] : [[-1], [0], [1]];
+  const lanes = pick(combos);
+  seg.obstacles.push({ type: 'wall', u, lanes, hit: false });
+  const rot = Math.atan2(seg.dir.x, seg.dir.z) + Math.PI;
+  const w = LANE_W * lanes.length;
+  const m = new THREE.Mesh(GEO.box, MAT.rock);
+  m.scale.set(w, 2.6, 0.7);
+  segWorld(seg, seg.startD + u, (lanes[0] + lanes[lanes.length - 1]) / 2 * LANE_W, 1.3, m.position);
+  m.rotation.y = rot;
+  seg.group.add(m);
+  const cap = new THREE.Mesh(GEO.box, MAT.stone);
+  cap.scale.set(w + 0.3, 0.3, 0.95);
+  cap.position.copy(m.position); cap.position.y = 2.7; cap.rotation.copy(m.rotation);
+  seg.group.add(cap);
+  const vine = new THREE.Mesh(GEO.box, MAT.vine);
+  vine.scale.set(w * 0.7, 0.9, 0.12);
+  vine.position.copy(m.position); vine.position.y = 1.7; vine.position.x += rand(-0.4, 0.4);
+  vine.rotation.copy(m.rotation); vine.rotation.z = rand(-0.15, 0.15);
+  seg.group.add(vine);
+  return lanes;   // 返回被堵的车道，供金币避开
+}
+function addBeam(seg, u) {
+  seg.obstacles.push({ type: 'beam', u, lanes: [-1, 0, 1], hit: false });
+  const rot = Math.atan2(seg.dir.x, seg.dir.z) + Math.PI;
+  const beam = new THREE.Mesh(GEO.box, MAT.wood);
+  beam.scale.set(PATH_W + 0.6, 0.35, 0.5);
+  segWorld(seg, seg.startD + u, 0, 1.28, beam.position);
+  beam.rotation.y = rot;
+  seg.group.add(beam);
+  for (const side of [-1, 1]) {
+    const post = new THREE.Mesh(GEO.box, MAT.wood);
+    post.scale.set(0.3, 1.5, 0.35);
+    segWorld(seg, seg.startD + u, side * (PATH_W / 2 + 0.15), 0.75, post.position);
+    post.rotation.y = rot;
+    seg.group.add(post);
+    const p = _v3.copy(beam.position).addScaledVector(seg.right, side * (PATH_W / 2 - 0.3));
+    p.y = 1.95;
+    addFlame(seg, p, 0.9, 1.3);
+  }
+}
+function addGap(seg, u) {
+  const L = 2.3;
+  seg.gaps.push({ u0: u - L / 2, u1: u + L / 2 });
+  seg.obstacles.push({ type: 'gap', u, lanes: [-1, 0, 1], hit: false });
+}
+/* 垂藤帘：横跨全部车道，必须滑铲钻过，撞上绊倒 */
+function addVines(seg, u) {
+  seg.obstacles.push({ type: 'vine', u, lanes: [-1, 0, 1], hit: false });
+  const rot = Math.atan2(seg.dir.x, seg.dir.z) + Math.PI;
+  const m = new THREE.Mesh(GEO.plane, MAT.vineCurtain);
+  m.scale.set(PATH_W + 0.7, 1.5, 1);
+  segWorld(seg, seg.startD + u, 0, 1.62, m.position);   // 下缘 ~0.87m：滑铲(顶0.8)可过
+  m.rotation.y = rot;
+  seg.group.add(m);
+  (seg.vines ||= []).push(m);
+}
+function addCoinLine(seg, u, lane, single = false) {
+  const n = single ? 1 : 5;
+  for (let i = 0; i < n; i++) {
+    const cd = u + i * 1.7;
+    if (cd > seg.len - 0.8) break;   // 别伸出路段外，伸出去的金币吃不到
+    addCoin(seg, cd, lane, 0.55);
+  }
+}
+function addCoinArc(seg, u) {
+  const L = 3.2;
+  for (let i = 0; i < 5; i++) {
+    const t = i / 4;
+    addCoin(seg, u - L / 2 + t * L, 0, 0.55 + Math.sin(t * Math.PI) * 1.15);
+  }
+}
+function addCoin(seg, d, lane, y) {
+  const grp = new THREE.Group();
+  const m = new THREE.Mesh(GEO.coin, MAT.coin);
+  const glow = new THREE.Sprite(MAT.glow);
+  glow.scale.set(0.62, 0.62, 1);
+  grp.add(m); grp.add(glow);
+  segWorld(seg, seg.startD + d, lane * LANE_W, y, grp.position);
+  seg.group.add(grp);
+  seg.coins.push({ d, lane, y, grp, taken: false });
+}
+function addFlame(seg, pos, w, h) {
+  const fl = new THREE.Sprite(MAT.flame);
+  fl.scale.set(w, h, 1);
+  fl.userData.h = h;
+  fl.position.copy(pos);
+  seg.group.add(fl);
+  (seg.flames ||= []).push(fl);
+}
+
+/* ---------------- 路旁装饰 ---------------- */
+function buildDecor(seg, rot) {
+  const g = seg.group;
+  // 路段两端各留 8m 空白：过弯时相机会扫过相邻路段的头尾，
+  // 高火炬柱立在那儿会正好怼到镜头前
+  let u = rand(7, 10);
+  let side = Math.random() < 0.5 ? -1 : 1;
+  let n = 0;
+  while (u < seg.len - 8) {
+    const r = Math.random();
+    if (r < 0.42) {
+      addTree(g, seg, u, side * (PATH_W / 2 + rand(2.2, 7.5)), rot);
+    } else if (r < 0.6) {
+      const px = side * (PATH_W / 2 + 0.75);
+      const h = rand(2.4, 3.4);
+      const p = new THREE.Mesh(GEO.box, MAT.pillar);
+      p.scale.set(0.55, h, 0.55);
+      segWorld(seg, seg.startD + u, px, h / 2, p.position);
+      p.rotation.y = rot + rand(-0.1, 0.1);
+      g.add(p);
+      const cap = new THREE.Mesh(GEO.box, MAT.rock);
+      cap.scale.set(0.8, 0.25, 0.8);
+      cap.position.copy(p.position); cap.position.y = h + 0.1;
+      g.add(cap);
+      const fp = cap.position.clone(); fp.y += 0.75;
+      addFlame(seg, fp, 1.1, 1.6);
+    } else if (r < 0.72) {
+      const w = new THREE.Mesh(GEO.box, MAT.rock);
+      const h = rand(1, 2.4);
+      w.scale.set(rand(1.5, 3.2), h, 0.6);
+      segWorld(seg, seg.startD + u, side * (PATH_W / 2 + rand(1, 2.2)), h / 2 - 0.1, w.position);
+      w.rotation.y = rot + rand(-0.35, 0.35);
+      w.rotation.z = rand(-0.06, 0.06);
+      g.add(w);
+    } else {
+      addTree(g, seg, u, side * (PATH_W / 2 + rand(4, 9)), rot, true);
+    }
+    if (++n % 3 === 0) side = -side;
+    u += rand(4.5, 8);
+  }
+  if (seg.len > 24 && Math.random() < 0.5) {
+    const au = rand(10, seg.len - 14);   // 拱门离路段末端至少 14m，避免立在转弯区被相机扫到
+    for (const side of [-1, 1]) {
+      const p = new THREE.Mesh(GEO.box, MAT.pillar);
+      p.scale.set(0.7, 3.6, 0.7);
+      segWorld(seg, seg.startD + au, side * (PATH_W / 2 + 0.55), 1.8, p.position);
+      p.rotation.y = rot;
+      g.add(p);
+    }
+    const top = new THREE.Mesh(GEO.box, MAT.stone);
+    top.scale.set(PATH_W + 2.4, 0.6, 0.9);
+    segWorld(seg, seg.startD + au, 0, 3.85, top.position);
+    top.rotation.y = rot;
+    g.add(top);
+    const v = new THREE.Mesh(GEO.box, MAT.vine);
+    v.scale.set(PATH_W + 1.6, 0.18, 0.2);
+    segWorld(seg, seg.startD + au, 0, 3.5, v.position);
+    v.rotation.y = rot;
+    g.add(v);
+  }
+}
+function addTree(g, seg, u, px, rot, big = false) {
+  const h = big ? rand(5, 8) : rand(2.8, 5);
+  const trunk = new THREE.Mesh(GEO.cyl, MAT.trunk);
+  const tr = big ? 0.42 : rand(0.18, 0.3);
+  trunk.scale.set(tr, h, tr);
+  segWorld(seg, seg.startD + u, px, h / 2, trunk.position);
+  trunk.rotation.y = rand(0, Math.PI);
+  g.add(trunk);
+  const n = big ? 3 : 2;
+  for (let i = 0; i < n; i++) {
+    const leaf = new THREE.Mesh(GEO.cone, [MAT.leafA, MAT.leafB, MAT.leafC][i % 3]);
+    const lw = (big ? 2.6 : 1.6) * (1 - i * 0.22);
+    leaf.scale.set(lw, big ? 2.6 : 1.9, lw);
+    leaf.position.copy(trunk.position);
+    leaf.position.y = h - i * (big ? 1.1 : 0.75) + (big ? 0.6 : 0.4);
+    leaf.rotation.y = rand(0, Math.PI);
+    g.add(leaf);
+  }
+}
+
+/* ---------------- 水滑道：蓝色水道 + 木护栏 + 顶棚，全程滑姿冲刺 ---------------- */
+function buildWater(seg) {
+  const g = seg.group;
+  const len = seg.len;
+  const wt = texWater.clone();
+  wt.wrapS = wt.wrapT = THREE.RepeatWrapping;
+  wt.repeat.set(1.5, Math.max(1, Math.round(len / 3)));
+  wt.needsUpdate = true;
+  const wm = new THREE.MeshLambertMaterial({ map: wt });
+  seg.dyn = [wt, wm];
+
+  // 布局：水道里只有金币
+  let u = 6;
+  while (u < len - 6) { addCoinLine(seg, u, pick([-1, 0, 1])); u += rand(7, 10); }
+
+  const rot = Math.atan2(seg.dir.x, seg.dir.z) + Math.PI;
+  const floor = new THREE.Mesh(GEO.box, wm);
+  floor.scale.set(PATH_W + 0.2, 0.7, len);
+  segWorld(seg, seg.startD + len / 2, 0, -0.37, floor.position);
+  floor.rotation.y = rot;
+  g.add(floor);
+  // 木质滑道边栏 + 石基
+  for (const side of [-1, 1]) {
+    const rail = new THREE.Mesh(GEO.box, MAT.wood);
+    rail.scale.set(0.3, 0.5, len);
+    segWorld(seg, seg.startD + len / 2, side * (PATH_W / 2 + 0.12), 0.2, rail.position);
+    rail.rotation.y = rot;
+    g.add(rail);
+    const base = new THREE.Mesh(GEO.box, MAT.rock);
+    base.scale.set(0.55, 0.42, len);
+    segWorld(seg, seg.startD + len / 2, side * (PATH_W / 2 + 0.3), -0.1, base.position);
+    base.rotation.y = rot;
+    g.add(base);
+  }
+  // 顶部木架 + 垂藤装饰
+  for (let au = 8; au < len - 4; au += rand(9, 13)) {
+    for (const side of [-1, 1]) {
+      const post = new THREE.Mesh(GEO.box, MAT.wood);
+      post.scale.set(0.3, 2.6, 0.35);
+      segWorld(seg, seg.startD + au, side * (PATH_W / 2 + 0.3), 1.3, post.position);
+      post.rotation.y = rot;
+      g.add(post);
+    }
+    const top = new THREE.Mesh(GEO.box, MAT.wood);
+    top.scale.set(PATH_W + 1.4, 0.28, 0.5);
+    segWorld(seg, seg.startD + au, 0, 2.7, top.position);
+    top.rotation.y = rot;
+    g.add(top);
+    const v = new THREE.Mesh(GEO.plane, MAT.vineCurtain);
+    v.scale.set(PATH_W * 0.7, 1.0, 1);
+    segWorld(seg, seg.startD + au, 0, 2.15, v.position);
+    v.rotation.y = rot;
+    g.add(v);
+    (seg.vines ||= []).push(v);
+  }
+}
+
+/* ---------------- 转弯路口 ---------------- */
+function buildJunction(j) {
+  const g = j.group;
+  const C = j.start.clone().addScaledVector(j.dir, JW / 2);
+  j.center = C;
+  const rot = Math.atan2(j.dir.x, j.dir.z) + Math.PI;
+
+  const stoneTex = tex.path_stone.clone();
+  stoneTex.wrapS = stoneTex.wrapT = THREE.RepeatWrapping;
+  stoneTex.repeat.set(2, 2);
+  stoneTex.needsUpdate = true;
+  const floorMat = new THREE.MeshLambertMaterial({ map: stoneTex });
+  j.dyn = [stoneTex, floorMat];
+
+  const floor = new THREE.Mesh(GEO.box, floorMat);
+  floor.scale.set(JW, 0.7, JW);
+  floor.position.copy(C); floor.position.y = -0.35;
+  floor.rotation.y = rot;
+  g.add(floor);
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+    const curb = new THREE.Mesh(GEO.box, MAT.rock);
+    curb.scale.set(0.55, 0.5, 0.55);
+    const p = C.clone().addScaledVector(j.dir, sz * JW / 2).addScaledVector(j.right, sx * JW / 2);
+    curb.position.copy(p); curb.position.y = 0.1;
+    g.add(curb);
+  }
+  // 正前方高墙
+  const wall = new THREE.Mesh(GEO.box, MAT.rock);
+  wall.scale.set(JW + 1.6, 4.6, 1.0);
+  wall.position.copy(C).addScaledVector(j.dir, JW / 2 + 0.45);
+  wall.position.y = 2.2;
+  wall.rotation.y = rot;
+  g.add(wall);
+  const cap = new THREE.Mesh(GEO.box, MAT.stone);
+  cap.scale.set(JW + 2.2, 0.5, 1.3);
+  cap.position.copy(wall.position); cap.position.y = 4.7;
+  cap.rotation.y = rot;
+  g.add(cap);
+  for (const s of [-1, 1]) {
+    const fp = C.clone().addScaledVector(j.dir, JW / 2 - 0.2).addScaledVector(j.right, s * JW * 0.32);
+    fp.y = 2.6;
+    addFlame(j, fp, 1.5, 2.2);
+  }
+  // 封死不存在的出口（'L' 路口开口在左，封右侧）
+  if (j.turn !== 'T') {
+    const bad = j.turn === 'L' ? 1 : -1;
+    const sw = new THREE.Mesh(GEO.box, MAT.rock);
+    sw.scale.set(JW + 1, 3.6, 1);
+    sw.position.copy(C).addScaledVector(j.right, bad * (JW / 2 + 0.4));
+    sw.position.y = 1.7;
+    sw.rotation.y = rot;
+    g.add(sw);
+  }
+  // 地面箭头（脉冲）
+  j.arrows = [];
+  const mkArrow = (side, matr) => {
+    const m = new THREE.Mesh(GEO.plane, matr);
+    m.rotation.order = 'ZXY';
+    m.rotation.x = -Math.PI / 2;
+    m.rotation.z = rot;
+    m.position.copy(C).addScaledVector(j.dir, -JW * 0.16).addScaledVector(j.right, side * JW * 0.17);
+    m.position.y = 0.04;
+    m.scale.set(2.0, 2.0, 1);
+    g.add(m);
+    j.arrows.push(m);
+  };
+  if (j.turn === 'T' || j.turn === 'L') mkArrow(-1, MAT.arrowL.clone());
+  if (j.turn === 'T' || j.turn === 'R') mkArrow(1, MAT.arrowR.clone());
+  // 平台前角两根矮火炬墩（过去是 3m 高柱，过弯时相机会扫到、挡住视野，改矮墩）
+  for (const s of [-1, 1]) {
+    const p = new THREE.Mesh(GEO.box, MAT.pillar);
+    p.scale.set(0.42, 0.9, 0.42);
+    p.position.copy(C).addScaledVector(j.right, s * (JW / 2 + 0.45)).addScaledVector(j.dir, s * JW * 0.25);
+    p.position.y = 0.45;
+    g.add(p);
+    const fp = p.position.clone(); fp.y = 1.35;
+    addFlame(j, fp, 0.85, 1.05);
+  }
+}
+
+function commitTurn(j, dirSign) {
+  // dirSign 是玩家输入方向（-1 左 / +1 右）；rotY 的 +1 才是向左旋转，
+  // 故取相反数传入，保证"按左转、路径向左摆"
+  if (j.turn !== 'T' && Math.sign(dirSign) !== (j.turn === 'L' ? -1 : 1)) return false;
+  j.resolved = true;
+  const P = new THREE.Vector3();
+  segWorld(j, player.d, player.x, 0, P);
+  const newDir = rotY(j.dir, -dirSign);
+  const right = new THREE.Vector3().crossVectors(newDir, UP).round();
+  const rel = P.clone().sub(j.center);
+  const along = rel.dot(newDir);
+  const lat = rel.dot(right);
+  const seg = newSegCommon('straight', Math.min(player.d - along, player.d), j.center, newDir);
+  seg.len = rand(28, 40);
+  buildStraight(seg, {});
+  scene.add(seg.group);
+  path.segments.splice(path.segments.indexOf(j) + 1, 0, seg);
+  player.x = lat;
+  player.targetLane = clamp(Math.round(lat / LANE_W), -1, 1);
+  AudioSys.turn();
+  return true;
+}
+
+/* ============================================================
+   玩家 / 守护猴 / 粒子
+   ============================================================ */
+const player = {
+  d: 0, x: 0, y: 0, vy: 0,
+  targetLane: 0, lane: 0,
+  state: 'run',
+  slideT: 0, stumbleT: 0,
+  speed: 6.2, coins: 0,
+  group: new THREE.Group(),
+  rig: null, rigParts: null, poseJump: null, poseSlide: null, shadow: null,
+  runPhase: 0, bufferedTurn: null,
+};
+scene.add(player.group);
+
+/* 纸片人骨架：rig_body.png（已抠掉双臂的 run_back 帧）切成 上身 + 左右腿，
+   双臂用 rig_armL/R.png 独立平面挂在肩部轴点上摆动。
+   腿的几何原点平移到髋部（部件顶端），跑步时自然抬腿/折腿，
+   上身小幅扭转。切分比例按 run_back.png(158x412) 实测：
+   卫衣下摆 ~47%，裆部 ~56%，双腿中线 ~47%；上身与腿、左右腿之间
+   都留重叠带，靠 renderOrder 压住接缝。
+   手臂切分与轴点由 extract_rig_parts.py 生成（逐行连通域跟踪）。 */
+const RIG = {
+  H: 1.78,
+  torsoTop: 0, torsoBot: 0.485,     // 上身：头顶 → 卫衣下摆(含重叠)
+  legTop: 0.44, legBot: 1,          // 腿：髋部(重叠进上身) → 鞋底
+  splitL: 0, splitR: 1, mid: 0.47,  // 左腿横切 / 右腿横切 / 身体中线
+  over: 0.045,                      // 中缝水平重叠
+  armL: { x0: 0.0253, x1: 0.2532, y0: 0.318, y1: 0.4515, pivX: 0.1519, pivY: 0.3277 },
+  armR: { x0: 0.6899, x1: 1.0,    y0: 0.2888, y1: 0.5291, pivX: 0.7816, pivY: 0.2985 },
+};
+function buildPlayer() {
+  const mk = (key, h) => {
+    const a = img[key].width / img[key].height;
+    const m = new THREE.Mesh(GEO.plane, new THREE.MeshBasicMaterial({
+      map: tex[key], transparent: true, alphaTest: 0.02, depthWrite: false, side: THREE.DoubleSide,
+    }));
+    m.scale.set(h * a, h, 1);
+    m.position.y = h / 2;
+    m.visible = false;
+    player.group.add(m);
+    return m;
+  };
+  player.poseJump = mk('jump', 1.6);
+  player.poseSlide = mk('crouch', 1.15);
+
+  /* --- 跑步骨架 --- */
+  const H = RIG.H, W = H * img.rig_body.width / img.rig_body.height;
+  const part = (key, fTop, fBot, u0, u1, pivotTop) => {
+    const t = new THREE.Texture(img[key]);
+    t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+    t.repeat.set(u1 - u0, fBot - fTop);
+    t.offset.set(u0, 1 - fBot);
+    t.needsUpdate = true;
+    const g = new THREE.PlaneGeometry(W * (u1 - u0), H * (fBot - fTop));
+    if (pivotTop) g.translate(0, -H * (fBot - fTop) / 2, 0);   // 原点移到髋部
+    const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({
+      map: t, transparent: true, alphaTest: 0.02, depthWrite: false, side: THREE.DoubleSide,
+    }));
+    m.position.x = -W / 2 + W * (u0 + u1) / 2;
+    m.position.y = pivotTop ? H * (1 - fTop) : H * (1 - (fTop + fBot) / 2);
+    return m;
+  };
+  /* 手臂：整图独立平面，几何原点平移到肩部轴点 */
+  const arm = (key, d) => {
+    const t = new THREE.Texture(img[key]);
+    t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+    t.needsUpdate = true;
+    const w = W * (d.x1 - d.x0), h = H * (d.y1 - d.y0);
+    const g = new THREE.PlaneGeometry(w, h);
+    g.translate(w * (0.5 - (d.pivX - d.x0) / (d.x1 - d.x0)),
+                h * ((d.pivY - d.y0) / (d.y1 - d.y0) - 0.5), 0);
+    const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({
+      map: t, transparent: true, alphaTest: 0.02, depthWrite: false, side: THREE.DoubleSide,
+    }));
+    m.position.set(-W / 2 + d.pivX * W, H * (1 - d.pivY), 0);
+    return m;
+  };
+  const rig = player.rig = new THREE.Group();
+  const legL = part('rig_body', RIG.legTop, RIG.legBot, RIG.splitL, RIG.mid + RIG.over, true);
+  const legR = part('rig_body', RIG.legTop, RIG.legBot, RIG.mid - RIG.over, RIG.splitR, true);
+  const torso = part('rig_body', RIG.torsoTop, RIG.torsoBot, RIG.splitL, RIG.splitR, false);
+  const armL = arm('rig_armL', RIG.armL);
+  const armR = arm('rig_armR', RIG.armR);
+  legL.renderOrder = 1; legR.renderOrder = 2; armL.renderOrder = 3; armR.renderOrder = 4; torso.renderOrder = 5;
+  rig.add(legL); rig.add(legR); rig.add(armL); rig.add(armR); rig.add(torso);
+  rig.visible = false;
+  player.group.add(rig);
+  player.rigParts = { torso, legL, legR, armL, armR, hipY: H * (1 - RIG.legTop), prevL: 0, prevR: 0 };
+  /* 源图姿态：画面左腿伸直触地、右腿弯曲脚跟抬起——左腿摆幅小、右腿全程保持弯折 */
+
+  player.shadow = new THREE.Mesh(GEO.plane, MAT.shadow);
+  player.shadow.rotation.x = -Math.PI / 2;
+  player.shadow.scale.set(1.1, 1.4, 1);
+  player.group.add(player.shadow);
+  player.group.rotation.order = 'YXZ';
+}
+function showPose(key) {
+  player.rig.visible = key === 'body';
+  player.poseJump.visible = key === 'poseJump';
+  player.poseSlide.visible = key === 'poseSlide';
+}
+
+const monkeys = [];
+const monkeyMat = new THREE.MeshBasicMaterial({
+  map: texMonkey, transparent: true, alphaTest: 0.02, depthWrite: false, side: THREE.DoubleSide,
+});
+function buildMonkeys() {
+  for (let i = 0; i < 3; i++) {
+    const m = new THREE.Mesh(GEO.plane, monkeyMat);
+    m.scale.set(1.05, 1.05, 1);
+    m.visible = false;
+    scene.add(m);
+    monkeys.push({ mesh: m, laneOff: [-0.5, 0.4, 0.95][i], phase: i * 1.7 });
+  }
+}
+let monkeyGap = 15, monkeyAlertT = 0;
+function monkeyAlert(t = 2.6) { monkeyAlertT = Math.max(monkeyAlertT, t); }
+
+const particles = [];
+let dustMat, sparkMat, sprayMat;
+function spawnParticle(pos, kind = 'dust') {
+  let p = particles.find(q => !q.alive);
+  if (!p) {
+    p = { sprite: new THREE.Sprite(dustMat.clone()), alive: false, t: 0 };
+    p.sprite.visible = false; scene.add(p.sprite);
+    particles.push(p);
+  }
+  p.sprite.material = kind === 'dust' ? dustMat : kind === 'spray' ? sprayMat : sparkMat;
+  p.alive = true; p.t = 0; p.kind = kind;
+  p.sprite.visible = true;
+  p.sprite.position.copy(pos);
+  p.vel = kind === 'spray'
+    ? new THREE.Vector3(rand(-1, 1), rand(1.4, 3), rand(-1, 1))
+    : new THREE.Vector3(rand(-0.5, 0.5), rand(0.5, 1.6), rand(-0.5, 0.5));
+  p.life = kind === 'dust' ? rand(0.4, 0.7) : kind === 'spray' ? rand(0.3, 0.5) : 0.45;
+  p.size = kind === 'dust' ? rand(0.25, 0.5) : kind === 'spray' ? rand(0.2, 0.4) : 0.55;
+}
+function updateParticles(dt) {
+  for (const p of particles) {
+    if (!p.alive) continue;
+    p.t += dt;
+    if (p.t >= p.life) { p.alive = false; p.sprite.visible = false; continue; }
+    p.sprite.position.addScaledVector(p.vel, dt);
+    p.vel.y -= (p.kind === 'spray' ? 0.6 : 2.5) * dt;   // 水雾飘，尘土坠
+    const k = 1 - p.t / p.life;
+    p.sprite.scale.setScalar(p.size * (0.6 + k * 0.8));
+  }
+}
+
+/* ============================================================
+   游戏状态
+   ============================================================ */
+const G = {
+  state: 'boot',
+  best: +(localStorage.getItem('xr_temple_best') || 0),
+  dieT: 0, fallV: 0, shakeT: 0, deathReason: '',
+  camPos: new THREE.Vector3(), camLook: new THREE.Vector3(0, 1, -10),
+  fireflies: [],
+};
+
+function resetGame() {
+  path.reset();
+  Object.assign(player, {
+    d: 0, x: 0, y: 0, vy: 0, targetLane: 0, lane: 0,
+    state: 'run', slideT: 0, stumbleT: 0,
+    speed: 6.2, coins: 0, bufferedTurn: null, runPhase: 0,
+  });
+  player.group.rotation.set(0, 0, 0);
+  player.group.visible = true;
+  monkeyGap = 15; monkeyAlertT = 0;
+  makeFirstSegment();
+  ensureAhead(0);
+  G.score = 0; G.dieT = 0; G.fallV = 0; G.shakeT = 0;
+  $('score').textContent = '0'; $('coins').textContent = '0'; $('dist').textContent = '0 m';
+  $('best-hud').textContent = '最佳 ' + G.best;
+  showPose('body');
+}
+
+function startGame() {
+  AudioSys.ensure();
+  resetGame();
+  G.state = 'run';
+  camInit = false;
+  $('menu').classList.add('hidden');
+  $('over').classList.add('hidden');
+  $('hud').classList.remove('hidden');
+  $('tip').style.opacity = 0;
+  monkeyAlert(1.4);
+}
+
+function addScore(n) {
+  G.score += n;
+  $('score').textContent = Math.floor(G.score);
+}
+
+function dieCaught(reason) {
+  if (G.state !== 'run') return;
+  G.state = 'dying'; G.dieT = 0;
+  G.deathReason = reason;
+  player.state = 'dying';
+  AudioSys.roar();
+  monkeyAlert(99);
+  flashVignette(0.85);
+  G.shakeT = 0.5;
+}
+function dieFall() {
+  if (G.state !== 'run') return;
+  G.state = 'falling'; G.dieT = 0; G.fallV = -2;
+  G.deathReason = '坠入了深渊！';
+  player.state = 'falling';
+  AudioSys.fall();
+}
+function showGameOver() {
+  G.state = 'over';
+  const dist = Math.floor(player.d);
+  const total = dist + player.coins * 10;
+  const isRecord = total > G.best;
+  if (isRecord) { G.best = total; localStorage.setItem('xr_temple_best', total); }
+  $('over-title').textContent = G.deathReason || '被抓住了！';
+  $('over-stats').innerHTML =
+    `奔跑 <b>${dist}</b> 米 · 金币 <b>${player.coins}</b> × 10<br>总分 <b>${total}</b>`;
+  $('new-record').classList.toggle('hidden', !isRecord);
+  $('hud').classList.add('hidden');
+  $('over').classList.remove('hidden');
+}
+
+function stumble() {
+  if (player.stumbleT > 0) { dieCaught('被守护猴抓住了！'); return; }
+  player.stumbleT = 2.6;
+  player.speed *= 0.55;
+  AudioSys.stumble();
+  flashVignette(0.75);
+  G.shakeT = 0.35;
+  monkeyAlert(2.8);
+  $('tip').textContent = '快跑！！守护猴追上来了！';
+  $('tip').style.opacity = 1;
+}
+let vignetteT = 0;
+function flashVignette(v) { vignetteT = Math.max(vignetteT, v); }
+let lastSegType = '';      // 段类型切换检测（水滑道入场提示）
+let vineTipped = false;    // 藤蔓滑铲提示只给一次
+
+/* ============================================================
+   输入
+   ============================================================ */
+function turnOrLane(sign) {
+  if (G.state !== 'run') return;
+  const seg = path.segAt(player.d);
+  const idx = path.segments.indexOf(seg);
+  const next = path.segments[idx + 1];
+  // 已在路口 → 提交转弯
+  if (seg.type === 'junction' && !seg.resolved) {
+    const rel = player.d - seg.startD;
+    if (rel > -0.5 && rel < JW - 0.9) {
+      if (commitTurn(seg, sign)) { player.bufferedTurn = null; return; }
+      shakeTip('此路不通！'); return;
+    }
+  }
+  // 接近路口 → 缓存为转弯意图
+  if (seg.type === 'straight' && next && next.type === 'junction' && !next.resolved &&
+      player.d > next.startD - 5) {
+    player.bufferedTurn = { sign, t: 0.6 };
+    return;
+  }
+  // 普通换道
+  player.targetLane = clamp(player.targetLane + sign, -1, 1);
+}
+function shakeTip(msg) {
+  $('tip').textContent = msg;
+  $('tip').style.opacity = 1;
+  setTimeout(() => { if (G.state === 'run' && player.stumbleT <= 0) $('tip').style.opacity = 0; }, 800);
+}
+function inputJump() {
+  if (G.state !== 'run') return;
+  if (path.segAt(player.d).type === 'water') return;   // 水滑道上不能起跳
+  if (player.y <= 0.02) {
+    player.vy = JUMP_V; player.state = 'jump';
+    AudioSys.jump();
+    const p = segWorld(path.segAt(player.d), player.d, player.x, 0.1, new THREE.Vector3());
+    for (let i = 0; i < 4; i++) spawnParticle(p, 'dust');
+  }
+}
+function inputSlide() {
+  if (G.state !== 'run') return;
+  if (player.y > 0.05) { player.vy = -15; }
+  else if (player.state !== 'slide') {
+    player.state = 'slide'; player.slideT = 0.75;
+    AudioSys.slide();
+    const p = segWorld(path.segAt(player.d), player.d, player.x, 0.1, new THREE.Vector3());
+    for (let i = 0; i < 3; i++) spawnParticle(p, 'dust');
+  }
+}
+
+addEventListener('keydown', e => {
+  if (e.repeat) return;
+  const k = e.key;
+  if (G.state === 'menu' && (k === ' ' || k === 'Enter')) { startGame(); return; }
+  if (G.state === 'over' && (k === 'r' || k === 'R' || k === ' ')) { startGame(); return; }
+  if (k === 'p' || k === 'P' || k === 'Escape') { togglePause(); return; }
+  if (G.state !== 'run') return;
+  if (k === 'ArrowLeft' || k === 'a' || k === 'A') { inputLeft(); e.preventDefault(); }
+  else if (k === 'ArrowRight' || k === 'd' || k === 'D') { inputRight(); e.preventDefault(); }
+  else if (k === 'ArrowUp' || k === 'w' || k === 'W' || k === ' ') { inputJump(); e.preventDefault(); }
+  else if (k === 'ArrowDown' || k === 's' || k === 'S') { inputSlide(); e.preventDefault(); }
+});
+
+let touch = null;
+addEventListener('touchstart', e => {
+  if (e.target.closest('.panel') || e.target.closest('button')) return;
+  const t = e.changedTouches[0];
+  touch = { x: t.clientX, y: t.clientY, t: performance.now(), done: false };
+}, { passive: true });
+addEventListener('touchmove', e => {
+  if (!touch || touch.done) return;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - touch.x, dy = t.clientY - touch.y;
+  if (Math.abs(dx) > 30 || Math.abs(dy) > 30) {
+    touch.done = true;
+    if (Math.abs(dx) > Math.abs(dy)) (dx > 0 ? inputRight() : inputLeft());
+    else (dy > 0 ? inputSlide() : inputJump());
+  }
+}, { passive: true });
+addEventListener('touchend', e => {
+  if (!touch) return;
+  const dt = performance.now() - touch.t;
+  if (!touch.done && dt < 260) {
+    if (G.state === 'menu') startGame();
+    else if (G.state === 'run') inputJump();
+  }
+  touch = null;
+}, { passive: true });
+
+const inputLeft = () => turnOrLane(-1);
+const inputRight = () => turnOrLane(1);
+
+$('btn-start').onclick = startGame;
+$('btn-retry').onclick = startGame;
+$('btn-resume').onclick = togglePause;
+$('btn-quit').onclick = () => {
+  $('pause').classList.add('hidden');
+  $('hud').classList.add('hidden');
+  $('menu').classList.remove('hidden');
+  G.state = 'menu';
+};
+$('btn-pause').onclick = togglePause;
+$('btn-mute').onclick = () => {
+  AudioSys.setMuted(!AudioSys.muted);
+  $('btn-mute').textContent = AudioSys.muted ? '🔇' : '🔊';
+};
+function togglePause() {
+  if (G.state === 'run') { G.state = 'pause'; $('pause').classList.remove('hidden'); }
+  else if (G.state === 'pause') { G.state = 'run'; lastT = performance.now(); $('pause').classList.add('hidden'); }
+}
+
+window.__temple = { startGame, inputLeft, inputRight, inputJump, inputSlide, G, player, path, commitTurn, debug: DEBUG };
+// 测试/调试：手动推进游戏（页面隐藏导致 rAF 停摆时也可用）
+window.__temple.step = (n = 1, dt = 1 / 60) => {
+  for (let i = 0; i < n; i++) stepAndRender(dt, performance.now());
+  return { state: G.state, d: +player.d.toFixed(1), coins: player.coins, speed: +player.speed.toFixed(2) };
+};
+
+/* ============================================================
+   主循环
+   ============================================================ */
+const _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3();
+let lastT = performance.now();
+let camInit = false;
+
+function tick() {
+  requestAnimationFrame(tick);
+  const now = performance.now();
+  const dt = Math.min((now - lastT) / 1000, 0.05);
+  lastT = now;
+  stepAndRender(dt, now);
+}
+
+function stepAndRender(dt, now) {
+  if (G.state === 'pause' || G.state === 'menu' || G.state === 'boot') {
+    renderer.render(scene, camera);
+    return;
+  }
+  const running = G.state === 'run';
+  const segNow = path.segAt(player.d);
+
+  if (running) {
+    const waterNow = segNow.type === 'water';
+    player.speed = damp(player.speed, DIFF.speed(player.d) + (waterNow ? 1.6 : 0), 0.6, dt);
+    player.d += player.speed * dt;
+    AudioSys.drum(dt, player.speed);
+    if (waterNow) {                       // 水滑道：流速音 + 脚下水花
+      AudioSys.water(dt);
+      if (Math.random() < dt * 26) {
+        const p = segWorld(segNow, player.d, player.x, 0.12, new THREE.Vector3());
+        p.x += rand(-0.45, 0.45);
+        spawnParticle(p, 'spray');
+      }
+    }
+  }
+  if (segNow.type !== lastSegType) {      // 进出水滑道时提示一次
+    if (running && segNow.type === 'water') shakeTip('水滑道～ 冲啊！');
+    lastSegType = segNow.type;
+  }
+  if (player.stumbleT > 0) player.stumbleT -= dt;
+
+  player.lane = damp(player.lane, player.targetLane, 10, dt);
+  player.x = damp(player.x, player.lane * LANE_W, 12, dt);
+
+  if (player.y > 0 || player.state === 'jump') {
+    player.vy -= GRAV * dt;
+    player.y += player.vy * dt;
+    if (player.y <= 0) {
+      player.y = 0; player.vy = 0;
+      if (player.state === 'jump') {
+        player.state = 'run';
+        const p = segWorld(path.segAt(player.d), player.d, player.x, 0.1, new THREE.Vector3());
+        for (let i = 0; i < 5; i++) spawnParticle(p, 'dust');
+      }
+    }
+  }
+  if (player.state === 'slide') {
+    player.slideT -= dt;
+    if (player.slideT <= 0) player.state = 'run';
+  }
+
+  ensureAhead(player.d);
+  cleanupBehind(player.d);
+  if (player.bufferedTurn) {
+    player.bufferedTurn.t -= dt;
+    const seg = path.segAt(player.d);
+    if (seg.type === 'junction' && !seg.resolved) {
+      const rel = player.d - seg.startD;
+      if (rel > -0.5 && rel < JW - 0.9 && commitTurn(seg, player.bufferedTurn.sign)) {
+        player.bufferedTurn = null;
+      }
+    } else if (player.bufferedTurn.t <= 0) player.bufferedTurn = null;
+  }
+
+  if (running) checkCollisions();
+
+  if (G.state === 'falling') {
+    G.dieT += dt;
+    G.fallV -= 18 * dt;
+    player.y += G.fallV * dt;
+    player.group.rotation.x += dt * 2;
+    if (G.dieT > 0.7) $('fade').style.opacity = Math.min(1, (G.dieT - 0.7) * 1.6);
+    if (G.dieT > 1.5) { $('fade').style.opacity = 0; showGameOver(); }
+  }
+  if (G.state === 'dying') {
+    G.dieT += dt;
+    monkeyGap = damp(monkeyGap, 0.5, 8, dt);
+    player.group.rotation.x = damp(player.group.rotation.x, 1.3, 6, dt);
+    player.y = damp(player.y, -0.3, 4, dt);
+    if (G.dieT > 1.1) showGameOver();
+  }
+
+  /* 金币（所有存活路段都旋转，按绝对里程收集） */
+  const tAll = now / 1000;
+  for (const s of path.segments) {
+    for (const c of s.coins) {
+      if (c.taken) continue;
+      c.grp.rotation.y += dt * 5;
+      if (running &&
+          Math.abs(s.startD + c.d - player.d) < 0.6 &&   // 绝对里程判定：跨路段的金币也能吃到
+          Math.abs(c.lane * LANE_W - player.x) < 0.62 &&
+          Math.abs(c.y - (player.y + 0.7)) < 0.85) {
+        c.taken = true;
+        c.grp.visible = false;
+        player.coins++;
+        $('coins').textContent = player.coins;
+        addScore(10);
+        AudioSys.coin();
+        spawnParticle(c.grp.position, 'spark');
+      }
+    }
+    if (s.type === 'junction' && !s.resolved && s.arrows) {
+      for (const a of s.arrows) a.material.opacity = 0.55 + Math.sin(tAll * 6) * 0.45;
+    }
+    if (s.flames) for (const f of s.flames) {
+      const k = 0.85 + Math.sin(tAll * 13 + f.position.x * 3 + f.position.z) * 0.15;
+      f.scale.y = (f.userData.h || 1) * k;
+    }
+    if (s.vines) for (const v of s.vines) {          // 藤蔓随风轻摆
+      v.rotation.z = Math.sin(tAll * 1.5 + v.position.x * 2 + v.position.z) * 0.05;
+      v.rotation.x = Math.sin(tAll * 1.1 + v.position.z) * 0.04;
+    }
+  }
+
+  updatePlayerVisual(dt, tAll);
+  updateMonkeys(dt, tAll);
+  updateParticles(dt);
+  updateFireflies(tAll, dt);
+  updateCamera(dt);
+
+  if (running) {
+    $('dist').textContent = Math.floor(player.d) + ' m';
+    addScore(player.speed * dt);
+    updateTurnHint();
+  }
+  if (vignetteT > 0) {
+    vignetteT = Math.max(0, vignetteT - dt * 1.4);
+    $('vignette').style.opacity = vignetteT;
+  }
+  if (G.shakeT > 0) G.shakeT -= dt;
+
+  renderer.render(scene, camera);
+}
+
+/* --- 碰撞 --- */
+function checkCollisions() {
+  const seg = path.segAt(player.d);
+  const u = player.d - seg.startD;
+  for (const o of seg.obstacles) {
+    if (o.hit || o.type === 'gap') continue;
+    if (Math.abs(o.u - u) > 0.55) continue;
+    const x0 = Math.min(...o.lanes) * LANE_W - LANE_W * 0.42;
+    const x1 = Math.max(...o.lanes) * LANE_W + LANE_W * 0.42;
+    if (player.x < x0 - 0.15 || player.x > x1 + 0.15) continue;
+    if (o.type === 'root') {
+      if (player.y < 0.45) { o.hit = true; stumble(); }
+    } else if (o.type === 'vine') {
+      const top = player.y + (player.state === 'slide' ? 0.8 : 1.62);
+      if (top > 0.87) { o.hit = true; stumble(); }   // 藤蔓要滑铲钻，撞上绊倒
+    } else if (o.type === 'beam') {
+      const top = player.y + (player.state === 'slide' ? 0.8 : 1.62);
+      if (top > 1.12) { o.hit = true; dieCaught('撞上了火焰横梁！'); }
+    } else if (o.type === 'wall') {
+      if (player.y < 2.4) { o.hit = true; dieCaught('一头撞上了神庙高墙！'); }
+    }
+  }
+  if (player.y <= 0.02 && seg.gaps.length) {
+    for (const gp of seg.gaps) {
+      if (u > gp.u0 - 0.15 && u < gp.u1 + 0.15) { dieFall(); break; }
+    }
+  }
+  if (seg.type === 'junction' && !seg.resolved) {
+    if (u > JW - 0.75) dieCaught('撞上了神庙石墙！');
+  }
+}
+
+/* --- 转弯提示 --- */
+function updateTurnHint() {
+  const seg = path.segAt(player.d);
+  let msg = '';
+  if (seg.type === 'straight') {
+    const next = path.segments[path.segments.indexOf(seg) + 1];
+    if (next && next.type === 'junction' && !next.resolved) {
+      const dist = next.startD - player.d;
+      if (dist < 16) {
+        msg = next.turn === 'T' ? '前方路口 · 左右皆可转！'
+            : next.turn === 'L' ? '↰ 前方左转！' : '前方右转 ↱';
+      }
+    }
+  } else if (seg.type === 'junction' && !seg.resolved) {
+    msg = seg.turn === 'T' ? '转弯！' : seg.turn === 'L' ? '← 左转！' : '右转 →';
+  }
+  // 第一次接近藤蔓时提示一次滑铲
+  if (!msg && !vineTipped && seg.type === 'straight') {
+    const u = player.d - seg.startD;
+    const v = seg.obstacles.find(o => o.type === 'vine' && !o.hit && o.u > u && o.u - u < 16);
+    if (v) { msg = '↓ 滑铲钻过藤蔓！'; vineTipped = true; }
+  }
+  const tip = $('tip');
+  if (msg) { tip.textContent = msg; tip.style.opacity = 1; }
+  else if (player.stumbleT <= 0) tip.style.opacity = 0;
+}
+
+/* --- 玩家视觉 --- */
+function updatePlayerVisual(dt, tAll) {
+  const seg = path.segAt(player.d);
+  segWorld(seg, player.d, player.x, player.y, player.group.position);
+  if (G.state === 'run') {
+    player.runPhase += dt * player.speed * 1.85;
+    // 双腿交错（相位过 0/π）时身体最高
+    player.group.position.y += (0.5 + 0.5 * Math.cos(2 * player.runPhase)) * 0.065;
+  }
+  if (player.state === 'slide') showPose('poseSlide');
+  else if (player.y > 0.05) showPose('poseJump');
+  else if (seg.type === 'water') showPose('poseSlide');   // 水滑道全程滑姿
+  else showPose('body');
+  // 面向相机（billboard）
+  player.group.rotation.y = Math.atan2(
+    camera.position.x - player.group.position.x,
+    camera.position.z - player.group.position.z);
+  // 换道侧倾
+  const targetX = player.lane * LANE_W;
+  const lean = clamp((targetX - player.x) * -0.55, -0.3, 0.3);
+  player.group.rotation.z = damp(player.group.rotation.z, lean, 10, dt);
+  if (G.state === 'run') {
+    player.group.rotation.x = damp(player.group.rotation.x, player.state === 'slide' ? 0.12 : 0, 8, dt);
+  }
+  // 影子
+  player.shadow.position.set(0, -player.y + 0.03, 0);
+  const sh = clamp(1 - player.y * 0.28, 0.35, 1);
+  player.shadow.scale.set(1.1 * sh, 1.4 * sh, 1);
+  // 跑步循环：神庙逃亡式——高抬腿大步幅、用力摆臂、上身前倾
+  // （源图左腿直、右腿弯，摆幅区别对待；手臂与同侧腿相位相反）
+  const P = player.rigParts;
+  if (P && player.rig.visible) {
+    const amp = clamp(0.6 + player.speed * 0.045, 0.7, 1.05);
+    const s = Math.sin(player.runPhase);
+    const gL = 0.5 + 0.5 * s;         // 左腿(直腿)摆动量 0..1
+    const gR = 0.5 - 0.5 * s;         // 右腿(弯腿)摆动量
+    // 左腿：后蹬 → 高抬前摆
+    const swingL = gL * amp;
+    P.legL.scale.y = 1 - swingL * 0.24;
+    P.legL.position.y = P.hipY + swingL * 0.09;
+    P.legL.rotation.x = swingL * 0.48 - 0.08;
+    // 右腿：始终带弯折，抬得更高
+    const swingR = (0.15 + 0.85 * gR) * amp;
+    P.legR.scale.y = 1 - swingR * 0.28;
+    P.legR.position.y = P.hipY + swingR * 0.11;
+    P.legR.rotation.x = swingR * 0.55 - 0.12;
+    // 手臂大幅前后摆（与同侧腿反相），微微外张
+    P.armL.rotation.x = -s * 0.55 * amp - 0.06;
+    P.armL.rotation.z = -0.07 + s * 0.04;
+    P.armR.rotation.x = s * 0.55 * amp - 0.06;
+    P.armR.rotation.z = 0.07 + s * 0.04;
+    // 上身前倾 + 随步伐反扭
+    P.torso.rotation.x = -0.10;
+    P.torso.rotation.y = s * 0.12;
+    P.torso.rotation.z = s * 0.05;
+    // 落脚扬尘：摆动量从高处跌回触地的一瞬
+    if (G.state === 'run' && player.y <= 0.02 &&
+        ((swingL < 0.14 * amp && P.prevL >= 0.14 * amp) ||
+         (swingR < 0.22 * amp && P.prevR >= 0.22 * amp))) {
+      const p = segWorld(seg, player.d, player.x, 0.08, new THREE.Vector3());
+      p.x += rand(-0.3, 0.3);
+      for (let i = 0; i < 2; i++) spawnParticle(p, 'dust');
+    }
+    P.prevL = swingL; P.prevR = swingR;
+  }
+}
+
+/* --- 守护猴 --- */
+function updateMonkeys(dt, tAll) {
+  if (G.state === 'run') {
+    if (monkeyAlertT > 0) {
+      monkeyAlertT -= dt;
+      monkeyGap = damp(monkeyGap, 3.4, 3.6, dt);
+    } else {
+      monkeyGap = damp(monkeyGap, 14, 0.8, dt);
+    }
+  }
+  // 猴群在玩家身后 monkeyGap 处——注意要用"猴群所在路段"的坐标系
+  const bseg = path.segAt(Math.max(0, player.d - monkeyGap));
+  for (let i = 0; i < monkeys.length; i++) {
+    const mk = monkeys[i];
+    const bounce = Math.abs(Math.sin(tAll * 9 + mk.phase)) * 0.38;
+    segWorld(bseg, player.d - monkeyGap, player.x + mk.laneOff, bounce + 0.75, mk.mesh.position);
+    mk.mesh.visible = monkeyGap < 12 && G.state !== 'menu' && G.state !== 'boot';
+    mk.mesh.rotation.y = Math.atan2(
+      camera.position.x - mk.mesh.position.x,
+      camera.position.z - mk.mesh.position.z);
+  }
+}
+
+/* --- 相机 --- */
+function updateCamera(dt) {
+  const seg = path.segAt(player.d);
+  const dir = seg.dir;
+  const pWorld = player.group.position;
+   _v1.copy(pWorld).addScaledVector(dir, -5.2);
+  _v1.y += 2.85 + player.y * 0.3;
+  if (G.state === 'falling') _v1.y += player.y * 0.5;
+  if (!camInit) { G.camPos.copy(_v1); camInit = true; }
+  const k = G.shakeT > 0 ? 8 : 5;
+  G.camPos.x = damp(G.camPos.x, _v1.x, k, dt);
+  G.camPos.y = damp(G.camPos.y, _v1.y, k, dt);
+  G.camPos.z = damp(G.camPos.z, _v1.z, k, dt);
+  camera.position.copy(G.camPos);
+  if (G.shakeT > 0) {
+    camera.position.x += rand(-0.12, 0.12) * G.shakeT * 2;
+    camera.position.y += rand(-0.1, 0.1) * G.shakeT * 2;
+  }
+  _v2.copy(pWorld).addScaledVector(dir, 7);
+  _v2.y += 1.2;
+  G.camLook.lerp(_v2, 1 - Math.exp(-6 * dt));
+  camera.lookAt(G.camLook);
+  camera.fov = 72 + clamp((player.speed - 6.2) * 0.9, 0, 7);
+  camera.updateProjectionMatrix();
+}
+
+/* --- 萤火虫 / 深渊地面 --- */
+let abyssGround = null;
+function buildFireflies() {
+  // 深渊地面：路下方 6m 的丛林地面，随相机移动
+  const gt = tex.ground_moss.clone();
+  gt.wrapS = gt.wrapT = THREE.RepeatWrapping;
+  gt.repeat.set(30, 30);
+  gt.needsUpdate = true;
+  abyssGround = new THREE.Mesh(GEO.plane, new THREE.MeshLambertMaterial({ map: gt }));
+  abyssGround.rotation.x = -Math.PI / 2;
+  abyssGround.scale.set(220, 220, 1);
+  abyssGround.position.y = -6;
+  scene.add(abyssGround);
+  for (let i = 0; i < 26; i++) {
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: texGlow, color: 0xc8ff70, transparent: true, opacity: 0.7,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    }));
+    s.scale.setScalar(rand(0.12, 0.3));
+    s.position.set(rand(-14, 14), rand(0.5, 5), rand(-70, 8));
+    scene.add(s);
+    G.fireflies.push({ s, ph: rand(0, 9), sp: rand(0.4, 1.2) });
+  }
+}
+function updateFireflies(tAll, dt) {
+  if (abyssGround) {
+    abyssGround.position.x = camera.position.x;
+    abyssGround.position.z = camera.position.z;
+  }
+  for (const f of G.fireflies) {
+    f.s.position.y += Math.sin(tAll * f.sp + f.ph) * dt * 0.4;
+    f.s.position.x += Math.cos(tAll * f.sp * 0.7 + f.ph) * dt * 0.3;
+    f.s.material.opacity = 0.35 + Math.sin(tAll * 3 + f.ph) * 0.3;
+    if (f.s.position.z > camera.position.z + 12) f.s.position.z -= 75;
+    if (f.s.position.z < camera.position.z - 63) f.s.position.z += 75;
+  }
+}
+
+/* ---------------- 启动 ---------------- */
+bootPromise.then(() => {
+  initMAT();
+  dustMat = new THREE.SpriteMaterial({ map: texDust, transparent: true, opacity: 0.7, depthWrite: false });
+  sparkMat = new THREE.SpriteMaterial({ map: texGlow, color: 0xffd968, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+  sprayMat = new THREE.SpriteMaterial({ map: texGlow, color: 0xaee2ff, transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending, depthWrite: false });
+  $('loading').classList.add('hidden');
+  buildPlayer();
+  buildMonkeys();
+  buildFireflies();
+  resetGame();
+  G.state = 'menu';
+  $('menu').classList.remove('hidden');
+  $('menu-best').textContent = G.best > 0 ? `最佳成绩：${G.best} 分` : '第一次进庙？小心脚下！';
+  $('btn-mute').textContent = AudioSys.muted ? '🔇' : '🔊';
+  camInit = false;
+  lastT = performance.now();
+  if (location.search.includes('autostart=1')) startGame();
+}).catch(err => {
+  $('loading').innerHTML = `<div class="err">${err.message}<br><br>请通过本地服务器打开本页面（详见 使用说明.md）</div>`;
+  console.error(err);
+});
+tick();
+</script>
+</body>
+</html>
